@@ -5,7 +5,7 @@
 #include <vector>
 #include <mutex>
 
-constexpr int SIZE = 50'000'000;
+constexpr int SIZE = 5'000'000;
 constexpr int THREAD = 8;
 
 using namespace std;
