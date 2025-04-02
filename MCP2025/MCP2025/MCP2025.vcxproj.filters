@@ -36,5 +36,11 @@
     <ClCompile Include="7.qwe.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="8.cas.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="9.c_set.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

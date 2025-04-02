@@ -13,7 +13,7 @@ volatile int sum;
 
 atomic_int asum;
 
-void worker(int count)
+void worker_cas(int count)
 {
 	for (int i = 0; i < 50'000'000 / count; ++i) {
 		s_m.lock();
@@ -43,14 +43,14 @@ void l_worker(int count)
 
 int main()
 {
-	worker(1);
+	worker_cas(1);
 	println("locking");
 	for (int thread_num = 1; thread_num <= 16; thread_num *= 2) {
 		sum = 0;
 		std::vector<std::thread> threads;
 		auto start = chrono::high_resolution_clock::now();
 		for (int i = 0; i < thread_num; ++i) {
-			threads.emplace_back(worker, thread_num);
+			threads.emplace_back(worker_cas, thread_num);
 		}
 		for (auto& th : threads) {
 			th.join();

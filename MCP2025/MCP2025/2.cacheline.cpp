@@ -19,7 +19,7 @@ struct NUM {
 };
 NUM cache_arr_sum[16];
 
-void worker(int count)
+void worker_cas(int count)
 {
 	for (int i = 0; i < 50'000'000 / count; ++i) {
 		s_m.lock();
@@ -64,7 +64,7 @@ void o3_worker(const int count, const int thread_id)
 
 int main()
 {
-	worker(1);
+	worker_cas(1);
 
 	println("local");
 	for (int thread_num = 1; thread_num <= 16; thread_num *= 2) {
