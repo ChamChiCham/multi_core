@@ -20,7 +20,7 @@ public:
 	~NODE() {}
 
 	void lock() { glock.lock(); }
-	void unlock() { glock.unlock(); }	
+	void unlock() { glock.unlock(); }
 
 
 };
@@ -32,7 +32,7 @@ public:
 };
 
 class CLIST {
-	NODE* head, *tail;
+	NODE* head, * tail;
 
 public:
 	CLIST()
@@ -54,91 +54,92 @@ public:
 			delete ptr;
 		}
 	}
+
+	bool validate(NODE* pred, NODE* curr) {
+		NODE* p = head;
+		while (p->key <= pred->key) {
+			if (p == pred) {
+				return pred->next == curr;
+			}
+			p = p->next;
+		}
+		return false;
+	}
+
 	bool Add(int key)
 	{
-		head->lock();
-		NODE* pred = head;
-		NODE* curr = pred->next;
-		curr->lock();
-		while (curr->key < key) {
-			pred->unlock();
-			pred = curr;
-			curr = curr->next;
-			curr->lock();
-		}
+		
+		while (true) {
+			NODE* pred = head;
+			NODE* curr = pred->next;
+			while (curr->key < key) {
+				pred = curr;
+				curr = curr->next;
+			}
 
-		if (curr->key == key) {
-			//glock.unlock();
+			curr->lock(); pred->lock();
+			if (validate(pred, curr)) {
+				if (curr->key == key) {
+					curr->unlock(); pred->unlock();
+					return false;
+				}
+				else {
+					auto n = new NODE{ key };
+					n->next = curr;
+					pred->next = n;
+					curr->unlock(); pred->unlock();
+					return true;
+				}
+			}	
 			curr->unlock(); pred->unlock();
-			return false;
-		}
-		else {
-			auto n = new NODE{ key };
-			n->next = curr;
-			pred->next = n;
-			//glock.unlock();
-			curr->unlock(); pred->unlock();
-			return true;
 		}
 	}
 
 
 	bool Remove(int key)
 	{
-
-		head->lock(); 
-		NODE* pred = head;
-		//glock.lock();
-		NODE* curr = pred->next;
-		curr->lock();
+		while (true) {
+			NODE* pred = head;
+			NODE* curr = pred->next;
 
 
-		while (curr->key < key) {
-			pred->unlock();
-			pred = curr;
-			curr = curr->next;
-			curr->lock();
-		}
+			while (curr->key < key) {
+				pred = curr;
+				curr = curr->next;
+			}
 
-		if (curr->key == key) {
-			auto n = curr;
-			pred->next = n->next;
-			//glock.unlock();
-
+			curr->lock(); pred->lock();
+			if (validate(pred, curr)) {
+				if (curr->key == key) {
+					pred->next = curr->next;
+					curr->unlock(); pred->unlock();
+					// delete n;
+					return true;
+				}
+				else {
+					curr->unlock(); pred->unlock();
+					return false;
+				}
+			}
 			curr->unlock(); pred->unlock();
-			delete n;
-			return true;
-		}
-		else {
-			//glock.unlock();
-			curr->unlock(); pred->unlock();
-			return false;
 		}
 	}
 	bool Contains(int key)
 	{
-		head->lock();
-		NODE* pred = head;
-		
-		//glock.lock();
-		NODE* curr = pred->next;
-		curr->lock();
-		while (curr->key < key) {
-			pred->unlock();
-			pred = curr;
-			curr = curr->next;
-			curr->lock();
-		}
+		while (true) {
+			NODE* pred = head;
+			NODE* curr = pred->next;
+			while (curr->key < key) {
+				pred = curr;
+				curr = curr->next;
+			}
 
-		if (curr->key == key) {
-			//glock.unlock();
+			curr->lock(); pred->lock();
+			if (validate(pred, curr)) {
+				curr->unlock(); pred->unlock();	
+				return curr->key == key;
+			}
 			curr->unlock(); pred->unlock();
-			return true;
-		}
-		else {
-			//glock.unlock();
-			curr->unlock(); pred->unlock();
-			return false;
 		}
 	}
 	void print20()
@@ -201,7 +202,7 @@ int main()
 		for (int i = 1; i <= 16; i = i * 2) {
 			std::vector <std::thread> threads;
 			g_set.clear();
-			
+
 			auto start_t = system_clock::now();
 			for (int j = 0; j < i; ++j)
 				threads.emplace_back(benchmark, i);
