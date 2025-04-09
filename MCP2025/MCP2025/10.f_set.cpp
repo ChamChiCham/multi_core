@@ -56,6 +56,7 @@ public:
 	}
 	bool Add(int key)
 	{
+		auto n = new NODE{ key };
 		head->lock();
 		NODE* pred = head;
 		NODE* curr = pred->next;
@@ -70,10 +71,10 @@ public:
 		if (curr->key == key) {
 			//glock.unlock();
 			curr->unlock(); pred->unlock();
+			delete n;
 			return false;
 		}
 		else {
-			auto n = new NODE{ key };
 			n->next = curr;
 			pred->next = n;
 			//glock.unlock();
