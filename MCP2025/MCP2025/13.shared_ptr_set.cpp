@@ -19,7 +19,7 @@ std::array<std::vector<HISTORY>, 16> history;
 struct NODE {
 public:
 	int key;
-	NODE* next;
+	std::shared_ptr<NODE> next;
 	std::mutex glock;
 	bool marked{ false };
 
@@ -37,30 +37,24 @@ public:
 };
 
 class LLIST {
-	NODE* head, * tail;
+	std::shared_ptr<NODE> head, tail;
 public:
 	LLIST()
 	{
-		head = new NODE{ std::numeric_limits<int>::min() };
-		tail = new NODE{ std::numeric_limits<int>::max() };
+		head = std::make_shared<NODE>(std::numeric_limits<int>::min());
+		tail = std::make_shared<NODE>(std::numeric_limits<int>::max());
 		head->next = tail;
 	}
 	~LLIST()
 	{
-		delete head;
-		delete tail;
+		head->next = tail;
 	}
 
 	void clear()
 	{
-		while (head->next != tail) {
-			auto ptr = head->next;
-			head->next = head->next->next;
-			delete ptr;
-		}
 	}
 
-	bool validate(NODE* pred, NODE* curr)
+	bool validate(std::shared_ptr<NODE> pred, std::shared_ptr<NODE> curr)
 	{
 		return not pred->marked && not curr->marked && pred->next == curr;
 	}
@@ -68,8 +62,8 @@ public:
 	bool Add(int key)
 	{
 		while (true) {
-			NODE* pred = head;
-			NODE* curr = pred->next;
+			std::shared_ptr<NODE> pred = head;
+			std::shared_ptr<NODE> curr = pred->next;
 			while (curr->key < key) {
 				pred = curr;
 				curr = curr->next;
@@ -82,7 +76,7 @@ public:
 					return false;
 				}
 				else {
-					auto n = new NODE{ key };
+					auto n = std::make_shared<NODE>(key);
 					n->next = curr;
 					pred->next = n;
 					curr->unlock(); pred->unlock();
@@ -95,8 +89,8 @@ public:
 	bool Remove(int key)
 	{
 		while (true) {
-			NODE* pred = head;
-			NODE* curr = pred->next;
+			std::shared_ptr<NODE> pred = head;
+			std::shared_ptr<NODE> curr = pred->next;
 
 
 			while (curr->key < key) {
@@ -123,13 +117,12 @@ public:
 	}
 	bool Contains(int key)
 	{
-		while (true) {
-			NODE* curr = head;
-			while (curr->key < key) {
-				curr = curr->next;
-			}
-			return key == curr->key && not curr->marked;
+		std::shared_ptr<NODE> curr = head;
+		while (curr->key < key) {
+			curr = curr->next;
 		}
+		return key == curr->key && not curr->marked;
+		
 	}
 	void print20()
 	{
@@ -166,7 +159,7 @@ void check_history(int num_threads)
 		}
 	}
 	for (int i = 0; i < KEY_RANGE; ++i) {
-		int val	 = survive[i];
+		int val = survive[i];
 		if (val < 0) {
 			std::cout << "ERROR. The value " << i << " removed while it is not in the set.\n";
 			exit(-1);
@@ -240,7 +233,7 @@ void benchmark(int num_thread)
 int main()
 {
 	using namespace std::chrono;
-	
+
 	{
 		auto start_t = system_clock::now();
 		benchmark(1);
@@ -255,7 +248,7 @@ int main()
 
 	// 알고리즘 정확성 검사
 	{
-		for (int i = 1; i <= 16; i = i * 2) {
+		for (int i = 1; i <= 1; i = i * 2) {
 			std::vector <std::thread> threads;
 			g_set.clear();
 			for (auto& h : history) h.clear();
@@ -274,8 +267,8 @@ int main()
 			check_history(i);
 		}
 	}
-{
-		for (int i = 1; i <= 16; i = i * 2) {
+	{
+		for (int i = 1; i <= 1; i = i * 2) {
 			std::vector <std::thread> threads;
 			g_set.clear();
 			auto start_t = system_clock::now();
