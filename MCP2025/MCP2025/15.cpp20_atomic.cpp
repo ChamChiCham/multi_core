@@ -1,11 +1,11 @@
 
-
 #include <iostream>
 #include <thread>
 #include <chrono>
 #include <vector>
 #include <mutex>
 #include <array>
+
 
 
 class HISTORY {
@@ -21,7 +21,7 @@ std::array<std::vector<HISTORY>, 16> history;
 struct NODE {
 public:
 	int key;
-	std::shared_ptr<NODE> next;
+	std::atomic<std::shared_ptr<NODE>> next;
 	std::mutex glock;
 	bool marked{ false };
 
@@ -39,6 +39,8 @@ public:
 };
 
 class LLIST {
+
+	// 이건 atomic으로 하지 않아도 됨.
 	std::shared_ptr<NODE> head, tail;
 public:
 	LLIST()
@@ -57,14 +59,17 @@ public:
 		head->next = tail;
 	}
 
-	bool validate(const std::shared_ptr<NODE>& pred, const std::shared_ptr<NODE>& curr)
+	// local 변수이기 때문에 굳이 atomic으로 선언할 필요가 없다.
+	// 오히려 오버헤드
+		bool validate(const std::shared_ptr<NODE>& pred, const std::shared_ptr<NODE>& curr)
 	{
-		return not pred->marked && not curr->marked && pred->next == curr;
+		return not pred->marked && not curr->marked && pred->next.load() == curr;
 	}
 
 	bool Add(int key)
 	{
 		while (true) {
+			// 얘도 local 변수이기 때문에 atomic할 필요가 없음.
 			std::shared_ptr<NODE> pred = head;
 			std::shared_ptr<NODE> curr = pred->next;
 			while (curr->key < key) {
@@ -98,14 +103,14 @@ public:
 
 			while (curr->key < key) {
 				pred = curr;
-				curr = curr->next;
+				curr = std::atomic_load(&curr->next);
 			}
 
 			curr->lock(); pred->lock();
 			if (validate(pred, curr)) {
 				if (curr->key == key) {
 					curr->marked = true;
-					pred->next = curr->next;
+					pred->next = curr->next.load();
 					curr->unlock(); pred->unlock();
 					// delete n;
 					return true;
@@ -125,11 +130,11 @@ public:
 			curr = curr->next;
 		}
 		return key == curr->key && not curr->marked;
-		
+
 	}
 	void print20()
 	{
-		auto p = head->next;
+		std::shared_ptr<NODE> p = head->next;
 
 		for (int i = 0; i < 20; ++i) {
 			if (tail == p) break;
@@ -271,7 +276,7 @@ int main()
 		}
 	}
 	{
-		for (int i = 1; i <= 1; i = i * 2) {
+		for (int i = 1; i <= 16; i = i * 2) {
 			std::vector <std::thread> threads;
 			g_set.clear();
 			auto start_t = system_clock::now();

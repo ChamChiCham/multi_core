@@ -60,5 +60,11 @@
     <ClCompile Include="13.shared_ptr_set.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="14.atomic_shared_ptr.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="15.cpp20_atomic.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

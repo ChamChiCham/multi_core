@@ -1,4 +1,5 @@
 
+#define _SILENCE_CXX20_OLD_SHARED_PTR_ATOMIC_SUPPORT_DEPRECATION_WARNING
 
 #include <iostream>
 #include <thread>
@@ -56,20 +57,21 @@ public:
 	{
 		head->next = tail;
 	}
-
+	
+	// ¤·
 	bool validate(const std::shared_ptr<NODE>& pred, const std::shared_ptr<NODE>& curr)
 	{
-		return not pred->marked && not curr->marked && pred->next == curr;
+		return not pred->marked && not curr->marked && std::atomic_load(&pred->next) == curr;
 	}
 
 	bool Add(int key)
 	{
 		while (true) {
 			std::shared_ptr<NODE> pred = head;
-			std::shared_ptr<NODE> curr = pred->next;
+			std::shared_ptr<NODE> curr = std::atomic_load(&pred->next);
 			while (curr->key < key) {
 				pred = curr;
-				curr = curr->next;
+				curr = std::atomic_load(&curr->next);
 			}
 
 			curr->lock(); pred->lock();
@@ -81,7 +83,7 @@ public:
 				else {
 					auto n = std::make_shared<NODE>(key);
 					n->next = curr;
-					pred->next = n;
+					std::atomic_exchange(&pred->next, n);
 					curr->unlock(); pred->unlock();
 					return true;
 				}
@@ -93,19 +95,20 @@ public:
 	{
 		while (true) {
 			std::shared_ptr<NODE> pred = head;
-			std::shared_ptr<NODE> curr = pred->next;
+			std::shared_ptr<NODE> curr = std::atomic_load(&pred->next);
 
 
 			while (curr->key < key) {
 				pred = curr;
-				curr = curr->next;
+				curr = std::atomic_load(&curr->next);
 			}
 
 			curr->lock(); pred->lock();
 			if (validate(pred, curr)) {
 				if (curr->key == key) {
 					curr->marked = true;
-					pred->next = curr->next;
+					/*pred->next = curr->next;*/
+					std::atomic_exchange(&pred->next, std::atomic_load(&curr->next));
 					curr->unlock(); pred->unlock();
 					// delete n;
 					return true;
@@ -122,10 +125,10 @@ public:
 	{
 		std::shared_ptr<NODE> curr = head;
 		while (curr->key < key) {
-			curr = curr->next;
+			curr = std::atomic_load(&curr->next);
 		}
 		return key == curr->key && not curr->marked;
-		
+
 	}
 	void print20()
 	{
@@ -271,7 +274,7 @@ int main()
 		}
 	}
 	{
-		for (int i = 1; i <= 1; i = i * 2) {
+		for (int i = 1; i <= 16; i = i * 2) {
 			std::vector <std::thread> threads;
 			g_set.clear();
 			auto start_t = system_clock::now();
