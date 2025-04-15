@@ -52,6 +52,7 @@ public:
 
 	void clear()
 	{
+		head->next = tail;
 	}
 
 	bool validate(std::shared_ptr<NODE> pred, std::shared_ptr<NODE> curr)
