@@ -66,5 +66,14 @@
     <ClCompile Include="15.cpp20_atomic.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="16.lf_l_set.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="17.ebr.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="18.wait_free.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
