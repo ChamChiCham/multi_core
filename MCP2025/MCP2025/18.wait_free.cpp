@@ -1138,12 +1138,12 @@ public:
 	}
 	bool Add(int x)
 	{
-		//std::lock_guard<std::mutex> aa { set_lock };
+		// std::lock_guard<std::mutex> aa { set_lock };
 		return m_set.insert(x).second;
 	}
 	bool Remove(int x)
 	{
-		//std::lock_guard<std::mutex> aa{ set_lock };
+		// std::lock_guard<std::mutex> aa{ set_lock };
 		if (0 != m_set.count(x)) {
 			m_set.erase(x);
 			return true;
@@ -1152,7 +1152,7 @@ public:
 	}
 	bool Contains(int x)
 	{
-		//std::lock_guard<std::mutex> aa{ set_lock };
+		// std::lock_guard<std::mutex> aa{ set_lock };
 		return 0 != m_set.count(x);
 
 	}
@@ -1369,11 +1369,6 @@ public:
 };
 
 
-/*
-
-*/
-
-
 // wait free
 class WFUNV_OBJECT {
 	U_NODE* volatile announce[MAX_THREADS];
@@ -1404,6 +1399,7 @@ public:
 		}
 		tail.next = nullptr;
 		for (auto& h : m_head) h = &tail;
+		for (auto& h : announce) h = &tail;
 	}
 
 	void print20()
@@ -1426,7 +1422,7 @@ public:
 			U_NODE* before = m_head[thread_id];
 			U_NODE* helper = announce[((before->m_seq + 1) % num_threads)];
 			U_NODE* prefer;
-			if (helper->m_seq == 0) prefer = helper;
+			if (helper->m_seq == 0 && helper != &tail) prefer = helper;
 			else prefer = announce[thread_id];
 			
 			long long temp = 0;
@@ -1437,7 +1433,6 @@ public:
 			U_NODE* after = before->next;
 			after->m_seq = before->m_seq + 1;
 			m_head[thread_id] = after;
-			
 		}
 
 		SEQOBJECT std_set;
@@ -1492,7 +1487,7 @@ public:
 constexpr int NUM_TEST = 40000;
 constexpr int KEY_RANGE = 1000;
 
-STD_LF_SET g_set;
+STD_WF_SET g_set;
 
 void check_history(int num_threads)
 {
@@ -1623,7 +1618,7 @@ int main()
 			check_history(i);
 		}
 	}
-{
+	{
 		for (int i = 1; i <= 16; i = i * 2) {
 			num_threads = i;
 			std::vector <std::thread> threads;

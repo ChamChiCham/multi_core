@@ -12,6 +12,11 @@ struct NODE {
 	NODE(int x) : value(x), next(nullptr) {}
 };
 
+struct DummyMutex {
+	void lock() {};
+	void unlock() {};
+};
+
 class CQUEUE {
 	NODE* head, * tail;
 	std::mutex	hl, tl;
@@ -72,7 +77,7 @@ public:
 };
 
 class LFQUEUE {
-	NODE* volatile head, * volatile tail;
+	NODE* volatile head, *volatile tail;
 public:
 	LFQUEUE()
 	{
@@ -100,29 +105,49 @@ public:
 		return std::atomic_compare_exchange_strong(a, &o, n);
 	}
 
+	bool CAS(NODE* volatile* addr, NODE* old_p, NODE* new_p)
+	{
+		volatile std::atomic<long long>* a = reinterpret_cast<volatile std::atomic_llong*>(addr);
+		long long o = reinterpret_cast<long long>(old_p);
+		long long n = reinterpret_cast<long long>(new_p);
+		return std::atomic_compare_exchange_strong(a, &o, n);
+	}
+
 	void Enq(int x)
 	{
 		NODE* n = new NODE(x);
-
-		CAS(&tail->next, nullptr, n);
-		tail->next = n;
-		tail = n;
+		while (true) {
+			NODE* last = tail;
+			NODE* next = last->next;
+			if (last != tail) continue;
+			if (nullptr == next) {
+				if (CAS(&(last->next), nullptr, n)) {
+					CAS(&tail, last, n);
+					return;
+				}
+			}
+			else CAS(&tail, last, next);
+		}
 
 	}
 
 	int Deq()
 	{
-		hl.lock();
-		if (head->next == nullptr) {
-			hl.unlock();
-			return -1;
+		while (true) {
+			NODE* first = head;
+			NODE* last = tail;
+			NODE* next = first->next;
+			if (first != head) continue;
+			if (nullptr == next) return -1;
+			if (first == last) {
+				CAS(&tail, last, next);
+				continue;
+			}
+			int value = next->value;
+			if (false == CAS(&head, first, next)) continue;
+			// delete first;
+			return value;
 		}
-		int value = head->next->value;
-		NODE* old = head;
-		head = head->next;
-		hl.unlock();
-		delete old;
-		return value;
 	}
 
 	void print20()
@@ -142,7 +167,7 @@ constexpr int MAX_THREADS = 16;
 
 constexpr int NUM_TEST = 10000000;
 
-CQUEUE g_queue;
+LFQUEUE g_queue;
 
 void benchmark(const int num_thread)
 {
