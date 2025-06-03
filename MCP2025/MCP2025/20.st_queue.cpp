@@ -147,9 +147,6 @@ public:
 };
 
 
-
-
-
 // 64bit stamp
 class STNODE;
 class STPTR;
@@ -193,6 +190,7 @@ public:
 bool CAS(STPTR* next1, STNODE* old_ptr, STNODE* new_ptr, int64_t old_st, int64_t new_st)
 {
 	STPTR old_sptr{ old_ptr, old_st };
+
 	return _InterlockedCompareExchange128(reinterpret_cast<int64_t volatile*>(next1),
 		new_st, reinterpret_cast<int64_t>(new_ptr),
 		reinterpret_cast<int64_t*>(&old_sptr));
@@ -285,7 +283,7 @@ public:
 
 
 
-LF_QUEUE my_queue;
+ST_LF_QUEUE my_queue;
 thread_local int thread_id;
 
 const int NUM_TEST = 10000000;
